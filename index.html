@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Farmasi Klaim App V11</title>
-    <!-- FIXED: Corrected complete CDN script addresses for database dependencies -->
+    <!-- Working CDN explicit paths -->
     <script src="https://jsdelivr.net"></script>
     <script src="https://jsdelivr.net"></script>
     
@@ -24,7 +24,7 @@
             top: 0; 
             z-index: 50; 
             display: flex; 
-            justify-content: space-between; 
+            justify-between; 
             align-items: center; 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
         }
@@ -188,12 +188,13 @@
         </div>
     </div>
 
+    <!-- FIX: Corrected target switch arguments to map parameters flawlessly -->
     <nav>
-        <button onclick="switchTab('transaksi')" id="nav-transaksi" class="tab-active">Input Dokter</button>
-        <button onclick="switchTab('outlet')" id="nav-outlet">Stok Outlet</button>
-        <button onclick="switchTab('plafon')" id="nav-plafon">Rekap Dokter</button>
-        <button onclick="switchTab('summary')" id="nav-summary">Summary</button>
-        <button onclick="switchTab('master')" id="nav-master">Master Data</button>
+        <button onclick="switchTab('tab-transaksi')" id="nav-tab-transaksi" class="tab-active">Input Dokter</button>
+        <button onclick="switchTab('tab-outlet')" id="nav-tab-outlet">Stok Outlet</button>
+        <button onclick="switchTab('tab-plafon')" id="nav-tab-plafon">Rekap Dokter</button>
+        <button onclick="switchTab('tab-summary')" id="nav-tab-summary">Summary</button>
+        <button onclick="switchTab('tab-master')" id="nav-tab-master">Master Data</button>
     </nav>
 
     <main>
@@ -227,5 +228,3 @@
                             <label>Qty (Box)</label>
                             <input type="number" id="input-doc-qty" min="1" required value="1">
                         </div>
-                    </div>
-                    <div class="grid-2">
