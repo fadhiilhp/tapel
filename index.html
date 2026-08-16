@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmasi Klaim App V11</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .tab-active { border-bottom: 3px solid #0F5132; color: #0F5132; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 pb-20">
+    <header class="bg-[#0F5132] text-white p-4 sticky top-0 z-50 shadow-md flex justify-between items-center">
+        <div>
+            <h1 class="font-bold text-lg leading-tight">Farmasi Klaim App V11</h1>
+            <p class="text-xs text-emerald-200">Akumulasi Plafon & Summary P2X Gross (Rp)</p>
+        </div>
+        <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg flex items-center gap-1 shadow">
+            Export Excel
+        </button>
+    </header>
+
+    <!-- Global Period Selector Banner (Tahun, Bulan, Cut Off) -->
+    <div class="bg-emerald-900 text-white px-3 py-2.5 flex justify-between items-center text-xs shadow-inner gap-1 flex-wrap">
+        <div class="flex items-center gap-1 font-medium">
+            <span>Periode:</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+            <!-- Selector Tahun -->
+            <select id="global-year-select" onchange="changePeriod()" class="bg-emerald-800 border border-emerald-600 text-white font-bold rounded-md px-1.5 py-1 text-xs focus:outline-none">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+            </select>
+            <!-- Selector Bulan -->
+            <select id="global-month-select" onchange="changePeriod()" class="bg-emerald-800 border border-emerald-600 text-white font-bold rounded-md px-1.5 py-1 text-xs focus:outline-none">
+                <option value="Januari">Januari</option>
+                <option value="Februari">Februari</option>
+                <option value="Maret">Maret</option>
+                <option value="April">April</option>
+                <option value="Mei">Mei</option>
+                <option value="Juni">Juni</option>
+                <option value="Juli" selected>Juli</option>
+                <option value="Agustus">Agustus</option>
+                <option value="September">September</option>
+                <option value="Oktober">Oktober</option>
+                <option value="November">November</option>
+                <option value="Desember">Desember</option>
+            </select>
+            <!-- Selector Cut Off -->
+            <select id="global-cutoff-select" onchange="changePeriod()" class="bg-emerald-800 border border-emerald-600 text-white font-bold rounded-md px-1.5 py-1 text-xs focus:outline-none">
+                <option value="Cut Off 1" selected>Cut Off 1</option>
+                <option value="Cut Off 2">Cut Off 2</option>
+                <option value="Semua CO (CO1+CO2)">Semua CO (CO1+CO2)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around z-50 shadow-lg text-[11px]">
+        <button onclick="switchTab('transaksi')" id="nav-transaksi" class="flex-1 py-3 text-center text-slate-500 tab-active flex flex-col items-center">Input Dokter</button>
+        <button onclick="switchTab('outlet')" id="nav-outlet" class="flex-1 py-3 text-center text-slate-500 flex flex-col items-center">Stok Outlet</button>
+        <button onclick="switchTab('plafon')" id="nav-plafon" class="flex-1 py-3 text-center text-slate-500 flex flex-col items-center">Rekap Dokter</button>
+        <button onclick="switchTab('summary')" id="nav-summary" class="flex-1 py-3 text-center text-slate-500 flex flex-col items-center">Summary</button>
+        <button onclick="switchTab('master')" id="nav-master" class="flex-1 py-3 text-center text-slate-500 flex flex-col items-center">Master Data</button>
+    </nav>
+
+    <main class="p-4 max-w-lg mx-auto">
+        <!-- TAB 1: INPUT TRANSAKSI DOKTER -->
+        <section id="tab-transaksi" class="space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="font-bold text-slate-700" id="form-doc-title">Form Penulisan Dokter</h2>
+                    <span class="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded" id="badge-period-transaksi">2026 - Juli - CO 1</span>
+                </div>
+                <form id="form-dokter" onsubmit="addPenulisanDokter(event)" class="space-y-3">
+                    <input type="hidden" id="edit-trans-id" value="-1">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600 block mb-1">Nama Dokter Target</label>
+                        <select id="input-doc-name" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50"></select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600 block mb-1">Outlet Tempat Penulisan</label>
+                        <select id="input-doc-outlet" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Produk Obat</label>
+                            <select id="input-doc-product" onchange="autoFillP2X()" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50"></select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Qty (Box)</label>
+                            <input type="number" id="input-doc-qty" min="1" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="1">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Status P2X</label>
+                            <select id="input-doc-p2x" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50">
+                                <option value="P2X">P2X</option>
+                                <option value="Existing">Non-P2X / Existing</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Insentif Dokter (Otomatis Tier)</label>
+                            <input type="text" id="input-doc-insentif-info" disabled class="w-full border border-slate-200 bg-slate-100 rounded-lg p-2.5 text-xs text-slate-500 font-semibold" value="Kalkulasi Otomatis">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" id="btn-cancel-trans" onclick="resetTransForm()" class="hidden flex-1 bg-slate-200 text-slate-700 font-semibold py-3 rounded-lg text-sm">Batal</button>
+                        <button type="submit" id="btn-save-trans" class="flex-1 bg-[#0F5132] text-white font-semibold py-3 rounded-lg shadow text-sm">Simpan Penulisan Dokter</button>
+                    </div>
+                </form>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 text-sm">Riwayat Penulisan Dokter (<span id="count-period-doc">2026 - Juli - CO 1</span>)</h3>
+                    <div class="flex items-center gap-1.5 text-xs">
+                        <label class="flex items-center gap-1 cursor-pointer font-medium text-slate-600">
+                            <input type="checkbox" id="check-all-trans" onchange="toggleSelectAll('trans')" class="rounded text-emerald-600"> Select All
+                        </label>
+                    </div>
+                </div>
+                <div class="flex gap-2 text-xs">
+                    <button onclick="deleteSelected('trans')" class="flex-1 bg-amber-600 text-white font-semibold py-1.5 rounded-lg shadow">Delete Selected</button>
+                    <button onclick="deleteAllInPeriod('trans')" class="flex-1 bg-red-600 text-white font-semibold py-1.5 rounded-lg shadow">Delete All</button>
+                </div>
+                <div id="log-dokter-list" class="space-y-2 max-h-80 overflow-y-auto pt-1"></div>
+            </div>
+        </section>
+
+        <!-- TAB 2: MONITORING STOK OUTLET -->
+        <section id="tab-outlet" class="hidden space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <div class="flex justify-between items-center mb-1">
+                    <h2 class="font-bold text-slate-700">Stok Outlet Periode Ini</h2>
+                    <span class="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded" id="badge-period-outlet">2026 - Juli - CO 1</span>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="toggleOutletModal()" class="flex-1 bg-emerald-700 text-white text-xs py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1 shadow">
+                        + Input Manual
+                    </button>
+                    <label class="flex-1 bg-blue-600 text-white text-xs py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1 shadow cursor-pointer text-center">
+                        Import Excel Stok
+                        <input type="file" id="import-excel-stok" accept=".xlsx, .xls, .csv" onchange="importStokExcel(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 text-sm">Status Stok Outlet & Klaim (<span id="count-period-out">2026 - Juli - CO 1</span>)</h3>
+                    <label class="flex items-center gap-1 cursor-pointer text-xs font-medium text-slate-600">
+                        <input type="checkbox" id="check-all-stok" onchange="toggleSelectAll('stok')" class="rounded text-emerald-600"> Select All
+                    </label>
+                </div>
+                <div class="flex gap-2 text-xs">
+                    <button onclick="deleteSelected('stok')" class="flex-1 bg-amber-600 text-white font-semibold py-1.5 rounded-lg shadow">Delete Selected</button>
+                    <button onclick="deleteAllInPeriod('stok')" class="flex-1 bg-red-600 text-white font-semibold py-1.5 rounded-lg shadow">Delete All</button>
+                </div>
+                <div id="stok-outlet-list" class="space-y-2 max-h-96 overflow-y-auto pt-1"></div>
+            </div>
+        </section>
+
+        <!-- TAB 3: REKAP PLAFON DOKTER PER BULAN & CUT OFF -->
+        <section id="tab-plafon" class="hidden space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-bold text-slate-700">Plafon Dokter Bulanan</h2>
+                    <span class="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded" id="badge-period-plafon">2026 - Juli - CO 1</span>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button onclick="toggleDocModal()" class="flex-1 bg-emerald-700 text-white text-xs py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1 shadow">
+                        + Tambah Dokter
+                    </button>
+                    <label class="flex-1 bg-blue-600 text-white text-xs py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1 shadow cursor-pointer text-center">
+                        Import Excel Plafon
+                        <input type="file" id="import-excel-file" accept=".xlsx, .xls, .csv" onchange="importDokterExcel(event)" class="hidden">
+                    </label>
+                </div>
+
+                <div class="flex justify-between items-center gap-2">
+                    <input type="text" id="search-dokter" oninput="renderPlafon()" placeholder="Cari nama atau kode user..." class="flex-1 border border-slate-300 rounded-lg p-2 text-xs">
+                    <label class="flex items-center gap-1 cursor-pointer text-xs font-medium text-slate-600 whitespace-nowrap">
+                        <input type="checkbox" id="check-all-plafon" onchange="toggleSelectAll('plafon')" class="rounded text-emerald-600"> Select All
+                    </label>
+                </div>
+                <div class="flex gap-2 text-xs">
+                    <button onclick="deleteSelected('plafon')" class="flex-1 bg-amber-600 text-white font-semibold py-1.5 rounded-lg shadow">Delete Selected</button>
+                    <button onclick="deleteAllInPeriod('plafon')" class="flex-1 bg-red-600 text-white font-semibold py-1.5 rounded-lg shadow">Delete All</button>
+                </div>
+            </div>
+
+            <div id="plafon-list" class="space-y-2 max-h-[450px] overflow-y-auto"></div>
+        </section>
+
+        <!-- TAB 4: SUMMARY PERIODE (CO1, CO2, ATAU KOMBINASI CO1+CO2) -->
+        <section id="tab-summary" class="hidden space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h2 class="font-bold text-slate-700">Summary Executive</h2>
+                    <span class="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded" id="badge-period-summary">2026 - Juli - CO 1</span>
+                </div>
+
+                <!-- Grand Summary Cards -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg">
+                        <span class="text-slate-500 text-[10px]">Total Net Klaim</span>
+                        <div class="font-extrabold text-emerald-800 text-sm mt-0.5" id="sum-total-net">Rp0</div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 p-2.5 rounded-lg">
+                        <span class="text-slate-500 text-[10px]">Total Gross Value</span>
+                        <div class="font-extrabold text-blue-800 text-sm mt-0.5" id="sum-total-gross">Rp0</div>
+                    </div>
+                    <div class="bg-purple-50 border border-purple-200 p-2.5 rounded-lg">
+                        <span class="text-slate-500 text-[10px]">Total Insentif Dokter</span>
+                        <div class="font-extrabold text-purple-800 text-sm mt-0.5" id="sum-total-insentif">Rp0</div>
+                    </div>
+                    <div class="bg-indigo-50 border border-indigo-200 p-2.5 rounded-lg">
+                        <span class="text-slate-500 text-[10px]">Total Gross P2X</span>
+                        <div class="font-extrabold text-indigo-800 text-sm mt-0.5" id="sum-total-p2x">Rp0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dokter Performance Summary -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <h3 class="font-bold text-slate-700 text-sm">Rekapitulasi Dokter, Plafon, Gross P2X & Insentif Tier</h3>
+                <div id="summary-dokter-list" class="space-y-2 max-h-[350px] overflow-y-auto text-xs divide-y divide-slate-100"></div>
+            </div>
+        </section>
+
+        <!-- TAB 5: MASTER DATA PERMANEN WITH CRUD -->
+        <section id="tab-master" class="hidden space-y-4">
+            <!-- Master Produk Section -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-bold text-slate-700">Master Produk & Harga</h2>
+                    <button onclick="toggleProdukModal()" class="bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow">
+                        + Tambah Obat
+                    </button>
+                </div>
+                <div id="master-produk-list" class="divide-y divide-slate-100 max-h-60 overflow-y-auto text-sm"></div>
+            </div>
+
+            <!-- Master Outlet Section -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-bold text-slate-700">Master Outlet</h2>
+                    <button onclick="toggleOutletMasterModal()" class="bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow">
+                        + Tambah Outlet
+                    </button>
+                </div>
+                <div id="master-outlet-list" class="divide-y divide-slate-100 max-h-60 overflow-y-auto text-sm"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Form Add/Edit Dokter Bulanan -->
+    <div id="modal-dokter" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-sm w-full p-4 space-y-3 shadow-xl">
+            <h3 id="modal-doc-title" class="font-bold text-slate-800 text-base">Tambah Plafon Dokter</h3>
+            <input type="hidden" id="edit-doc-index" value="-1">
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Kode User</label>
+                <input type="text" id="modal-doc-code" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="Contoh: USR-001">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Nama Dokter</label>
+                <input type="text" id="modal-doc-name" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="Contoh: ABDUL GHOFIR, SPPD">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Plafon Kuota Bulanan (Rp)</label>
+                <input type="number" id="modal-doc-plafon" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="Contoh: 6591667">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="toggleDocModal()" type="button" class="px-3 py-2 text-xs text-slate-500 font-semibold">Batal</button>
+                <button onclick="saveDokterModal()" type="button" class="px-4 py-2 text-xs bg-[#0F5132] text-white font-semibold rounded-lg shadow">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form Add/Edit Stok Outlet -->
+    <div id="modal-outlet" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-sm w-full p-4 space-y-3 shadow-xl">
+            <h3 id="modal-out-title" class="font-bold text-slate-800 text-base">Input Stok Outlet Manual</h3>
+            <input type="hidden" id="edit-out-id" value="-1">
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Distributor</label>
+                <select id="modal-out-distributor" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50">
+                    <option value="Kalista">Kalista</option>
+                    <option value="Penta">Penta</option>
+                    <option value="AMS">AMS</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Nama Outlet</label>
+                <select id="modal-out-name" onchange="autoFillKodeOutlet()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50"></select>
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Kode Outlet</label>
+                <input type="text" id="modal-out-kode" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50" placeholder="0001H36638">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Produk Obat</label>
+                <select id="modal-out-product" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">Stok Masuk (Qty)</label>
+                    <input type="number" id="modal-out-stok" min="1" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">Diskon (%)</label>
+                    <input type="number" step="0.1" id="modal-out-diskon" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="toggleOutletModal()" type="button" class="px-3 py-2 text-xs text-slate-500 font-semibold">Batal</button>
+                <button onclick="saveOutletModal()" type="button" class="px-4 py-2 text-xs bg-[#0F5132] text-white font-semibold rounded-lg shadow">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form Add/Edit Master Produk -->
+    <div id="modal-master-produk" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-sm w-full p-4 space-y-3 shadow-xl">
+            <h3 id="modal-produk-title" class="font-bold text-slate-800 text-base">Tambah Produk Obat</h3>
+            <input type="hidden" id="edit-produk-index" value="-1">
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Nama Produk Obat</label>
+                <input type="text" id="modal-produk-name" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="Contoh: Irvell 150">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Harga HNA (Rp)</label>
+                <input type="number" id="modal-produk-hna" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="209000">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Kategori Produk</label>
+                <select id="modal-produk-kat" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50">
+                    <option value="Existing">Existing</option>
+                    <option value="P2X">P2X</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="toggleProdukModal()" type="button" class="px-3 py-2 text-xs text-slate-500 font-semibold">Batal</button>
+                <button onclick="saveMasterProduk()" type="button" class="px-4 py-2 text-xs bg-[#0F5132] text-white font-semibold rounded-lg shadow">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form Add/Edit Master Outlet -->
+    <div id="modal-master-outlet" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-sm w-full p-4 space-y-3 shadow-xl">
+            <h3 id="modal-outlet-master-title" class="font-bold text-slate-800 text-base">Tambah Outlet Master</h3>
+            <input type="hidden" id="edit-outlet-master-index" value="-1">
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Nama Outlet</label>
+                <input type="text" id="modal-outlet-master-name" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="Contoh: Merdeka A">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Kode Outlet</label>
+                <input type="text" id="modal-outlet-master-kode" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="0001H31140">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600 block mb-1">Kategori Outlet</label>
+                <select id="modal-outlet-master-kat" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50">
+                    <option value="Apotek">Apotek</option>
+                    <option value="RS Swasta">RS Swasta</option>
+                    <option value="RSUD">RSUD</option>
+                    <option value="Klinik">Klinik</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="toggleOutletMasterModal()" type="button" class="px-3 py-2 text-xs text-slate-500 font-semibold">Batal</button>
+                <button onclick="saveMasterOutlet()" type="button" class="px-4 py-2 text-xs bg-[#0F5132] text-white font-semibold rounded-lg shadow">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentYear = "2026";
+        let currentMonth = "Juli";
+        let currentCutOff = "Cut Off 1";
+
+        let masterProduk = JSON.parse(localStorage.getItem('masterProduk_v11')) || [
+            { nama: "Co-Irvell 150", hna: 270000, kat: "Existing" },
+            { nama: "Co-Irvell 300", hna: 462000, kat: "Existing" },
+            { nama: "Irvell 150", hna: 209000, kat: "P2X" },
+            { nama: "Irvell 300", hna: 275000, kat: "P2X" },
+            { nama: "Meco Inj", hna: 242000, kat: "P2X" },
+            { nama: "Meco Kps", hna: 250000, kat: "P2X" },
+            { nama: "Metphar XR 500", hna: 52500, kat: "Existing" },
+            { nama: "Metphar XR 750", hna: 67500, kat: "Existing" },
+            { nama: "Qten", hna: 300000, kat: "P2X" },
+            { nama: "Prorenal", hna: 700000, kat: "Existing" },
+            { nama: "Removchol 20", hna: 389000, kat: "P2X" },
+            { nama: "Removchol 40", hna: 389000, kat: "P2X" },
+            { nama: "Roxemid", hna: 50000, kat: "Existing" },
+            { nama: "Tiavell", hna: 170000, kat: "Existing" },
+            { nama: "VP 1", hna: 93750, kat: "P2X" },
+            { nama: "VP 2", hna: 165000, kat: "P2X" },
+            { nama: "Velthrom 5", hna: 120000, kat: "P2X" },
+            { nama: "Velthrom 10", hna: 180000, kat: "P2X" },
+            { nama: "Tazovell 15", hna: 105000, kat: "Existing" },
+            { nama: "Tazovell 30", hna: 165000, kat: "Existing" },
+            { nama: "Orlivell", hna: 252000, kat: "P2X" },
+            { nama: "Tinov 40", hna: 115000, kat: "P2X" },
+            { nama: "Tinov 80", hna: 195000, kat: "P2X" },
+            { nama: "Diarvit 50", hna: 62500, kat: "Existing" },
+            { nama: "Diarvit 100", hna: 100000, kat: "Existing" },
+            { nama: "Lansifit", hna: 90000, kat: "Existing" }
+        ];
+
+        let masterOutlet = JSON.parse(localStorage.getItem('masterOutlet_v11')) || [
+            { nama: "Ben", kode: "0001H36638", kat: "Apotek" },
+            { nama: "Graha 2", kode: "0001H37958", kat: "Apotek" },
+            { nama: "Hasanah", kode: "0001H31402", kat: "RS Swasta" },
+            { nama: "Hasyim", kode: "0001H38691", kat: "RS Swasta" },
+            { nama: "RSNU", kode: "0001H36485", kat: "RS Swasta" },
+            { nama: "Jogoroto", kode: "0001H36475", kat: "Apotek" },
+            { nama: "Merdeka A", kode: "0001H31140", kat: "Apotek" },
+            { nama: "Merdeka K", kode: "0002H90507", kat: "Apotek" },
+            { nama: "Mojokerto", kode: "0001H31347", kat: "Apotek" },
+            { nama: "PMC", kode: "0001H35991", kat: "RS Swasta" },
+            { nama: "Ciko", kode: "0001H33101", kat: "RS Swasta" },
+            { nama: "Anwar", kode: "0001H32860", kat: "RS Swasta" },
+            { nama: "Gatoel", kode: "0001H31419", kat: "RSUD" },
+            { nama: "Reksa", kode: "0001H31430", kat: "RS Swasta" },
+            { nama: "Sikinah", kode: "0001H33218", kat: "RS Swasta" },
+            { nama: "Avicena", kode: "-", kat: "Apotek" }
+        ];
+
+        let masterDokterBulan = JSON.parse(localStorage.getItem('masterDokterBulan_v11')) || [];
+        let stokOutletData = JSON.parse(localStorage.getItem('stokOutletData_v11')) || [];
+        let penulisanDokterData = JSON.parse(localStorage.getItem('penulisanDokterData_v11')) || [];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            populateDropdowns();
+            renderAll();
+        });
+
+        // --- INSENTIF AUTOMATIC TIER CALCULATION ---
+        function calculateInsentif(nettValue, cutoffName) {
+            if (cutoffName === "Cut Off 2") {
+                if (nettValue >= 21000000) return 300000;
+                if (nettValue >= 15000000) return 210000;
+                if (nettValue >= 9000000) return 150000;
+                if (nettValue >= 4500000) return 90000;
+                if (nettValue >= 3000000) return 45000;
+                if (nettValue >= 1800000) return 24000;
+                return 0;
+            } else {
+                if (nettValue >= 14000000) return 200000;
+                if (nettValue >= 10000000) return 140000;
+                if (nettValue >= 6000000) return 100000;
+                if (nettValue >= 3000000) return 60000;
+                if (nettValue >= 2000000) return 30000;
+                if (nettValue >= 1200000) return 16000;
+                return 0;
+            }
+        }
+
+        function changePeriod() {
+            currentYear = document.getElementById('global-year-select').value;
+            currentMonth = document.getElementById('global-month-select').value;
+            currentCutOff = document.getElementById('global-cutoff-select').value;
+            const periodStr = `${currentYear} - ${currentMonth} - ${currentCutOff}`;
+
+            document.getElementById('badge-period-transaksi').innerText = periodStr;
+            document.getElementById('badge-period-outlet').innerText = periodStr;
+            document.getElementById('badge-period-plafon').innerText = periodStr;
+            document.getElementById('badge-period-summary').innerText = periodStr;
+            document.getElementById('count-period-doc').innerText = periodStr;
+            document.getElementById('count-period-out').innerText = periodStr;
+
+            resetTransForm();
+            populateDropdowns();
+            renderAll();
+        }
+
+        function matchPeriodFilter(item) {
+            const itemYear = item.tahun || "2026";
+            if (itemYear !== currentYear) return false;
+            if (item.bulan !== currentMonth) return false;
+            if (currentCutOff === "Semua CO (CO1+CO2)") return true;
+            return item.cutoff === currentCutOff;
+        }
+
+        function autoFillP2X() {
+            const prodName = document.getElementById('input-doc-product').value;
+            const pObj = masterProduk.find(p => p.nama === prodName);
+            if (pObj) {
+                document.getElementById('input-doc-p2x').value = pObj.kat === "P2X" ? "P2X" : "Existing";
+            }
+        }
+
+        function populateDropdowns() {
+            const docSelect = document.getElementById('input-doc-name');
+            const outSelect1 = document.getElementById('input-doc-outlet');
+            const outSelect2 = document.getElementById('modal-out-name');
+            const prodSelect1 = document.getElementById('input-doc-product');
+            const prodSelect2 = document.getElementById('modal-out-product');
+
+            docSelect.innerHTML = '<option value="">-- Pilih Dokter --</option>';
+            outSelect1.innerHTML = '<option value="">-- Pilih Outlet --</option>';
+            outSelect2.innerHTML = '<option value="">-- Pilih Outlet --</option>';
+            prodSelect1.innerHTML = '<option value="">-- Pilih Obat --</option>';
+            prodSelect2.innerHTML = '<option value="">-- Pilih Obat --</option>';
+
+            const docsInPeriod = masterDokterBulan.filter(d => (d.tahun || "2026") === currentYear && d.bulan === currentMonth);
+            const uniqueDocs = [];
+            docsInPeriod.forEach(d => {
+                if (!uniqueDocs.find(ud => ud.nama === d.nama)) {
+                    uniqueDocs.push(d);
+                }
+            });
+
+            uniqueDocs.forEach(d => { 
+                const codeLabel = d.kodeUser ? ` (${d.kodeUser})` : '';
+                docSelect.innerHTML += `<option value="${d.nama}">${d.nama}${codeLabel}</option>`; 
+            });
+
+            masterOutlet.forEach(o => {
+                outSelect1.innerHTML += `<option value="${o.nama}">${o.nama} (${o.kat})</option>`;
+                outSelect2.innerHTML += `<option value="${o.nama}">${o.nama} (${o.kat})</option>`;
+            });
+
+            masterProduk.forEach(p => {
+                prodSelect1.innerHTML += `<option value="${p.nama}">${p.nama} [${p.kat}] - Rp${p.hna.toLocaleString()}</option>`;
+                prodSelect2.innerHTML += `<option value="${p.nama}">${p.nama} [${p.kat}] - Rp${p.hna.toLocaleString()}</option>`;
+            });
+        }
+
+        function autoFillKodeOutlet() {
+            const outletName = document.getElementById('modal-out-name').value;
+            const found = masterOutlet.find(o => o.nama === outletName);
+            if (found) {
+                document.getElementById('modal-out-kode').value = found.kode;
+            }
+        }
+
+        function hitungKlaimBersih(katOutlet, diskon, gross) {
+            let pct = 0;
+            const d = diskon / 100;
+            if (katOutlet === 'RSUD') pct = 0;
+            else if (katOutlet === 'RS Swasta') {
+                if (d < 0.3) pct = 1.0;
+                else if (d < 0.4) pct = 0.5;
+                else if (d < 0.5) pct = 0.25;
+                else pct = 0;
+            } else if (katOutlet === 'Klinik') {
+                if (d < 0.2) pct = 1.0;
+                else if (d < 0.3) pct = 0.5;
+                else pct = 0;
+            } else if (katOutlet === 'Apotek') {
+                if (d < 0.06) pct = 1.0;
+                else if (d < 0.08) pct = 0.5;
+                else pct = 0;
+            }
+            return gross * pct;
+        }
+
+        function toggleSelectAll(type) {
+            const isChecked = document.getElementById(`check-all-${type}`).checked;
+            document.querySelectorAll(`.chk-${type}`).forEach(chk => chk.checked = isChecked);
+        }
+
+        function deleteSelected(type) {
+            const checkedBoxes = Array.from(document.querySelectorAll(`.chk-${type}:checked`));
+            if (checkedBoxes.length === 0) {
+                alert("Tidak ada data yang dipilih!");
+                return;
+            }
+
+            if (!confirm(`Yakin ingin menghapus ${checkedBoxes.length} data yang dipilih?`)) return;
+
+            const selectedValues = checkedBoxes.map(chk => chk.value);
+
+            if (type === 'trans') {
+                penulisanDokterData = penulisanDokterData.filter(p => !selectedValues.includes(String(p.id)));
+                document.getElementById('check-all-trans').checked = false;
+            } else if (type === 'stok') {
+                stokOutletData = stokOutletData.filter(s => !selectedValues.includes(String(s.id)));
+                document.getElementById('check-all-stok').checked = false;
+            } else if (type === 'plafon') {
+                masterDokterBulan = masterDokterBulan.filter(d => !((d.tahun || "2026") === currentYear && d.bulan === currentMonth && selectedValues.includes(d.nama)));
+                document.getElementById('check-all-plafon').checked = false;
+            }
+
+            saveAndRender();
+        }
+
+        function deleteAllInPeriod(type) {
+            if (!confirm(`Yakin ingin MENGHAPUS SEMUA DATA ${type.toUpperCase()} di periode ${currentYear} - ${currentMonth} - ${currentCutOff}?`)) return;
+
+            if (type === 'trans') {
+                penulisanDokterData = penulisanDokterData.filter(p => !matchPeriodFilter(p));
+                document.getElementById('check-all-trans').checked = false;
+            } else if (type === 'stok') {
+                stokOutletData = stokOutletData.filter(s => !matchPeriodFilter(s));
+                document.getElementById('check-all-stok').checked = false;
+            } else if (type === 'plafon') {
+                masterDokterBulan = masterDokterBulan.filter(d => !((d.tahun || "2026") === currentYear && d.bulan === currentMonth));
+                document.getElementById('check-all-plafon').checked = false;
+            }
+
+            saveAndRender();
+        }
+
+        // --- TAB 1 CRUD: PENULISAN DOKTER ---
+        function addPenulisanDokter(e) {
+            e.preventDefault();
+            const editId = parseInt(document.getElementById('edit-trans-id').value);
+            const dokter = document.getElementById('input-doc-name').value;
+            const outlet = document.getElementById('input-doc-outlet').value;
+            const produk = document.getElementById('input-doc-product').value;
+            const qty = parseInt(document.getElementById('input-doc-qty').value);
+            const p2x = document.getElementById('input-doc-p2x').value;
+
+            const activeCutOff = (currentCutOff === "Semua CO (CO1+CO2)") ? "Cut Off 1" : currentCutOff;
+
+            const stokItem = stokOutletData.find(s => (s.tahun || "2026") === currentYear && s.bulan === currentMonth && s.cutoff === activeCutOff && s.outlet === outlet && s.produk === produk);
+            const currentAlokasi = penulisanDokterData
+                .filter(p => (p.tahun || "2026") === currentYear && p.bulan === currentMonth && p.cutoff === activeCutOff && p.outlet === outlet && p.produk === produk && p.id !== editId)
+                .reduce((acc, curr) => acc + curr.qty, 0);
+
+            const sisaStok = (stokItem ? stokItem.masuk : 0) - currentAlokasi;
+
+            if (qty > sisaStok) {
+                alert(`STOK HABIS / KURANG (${currentYear} - ${currentMonth} - ${activeCutOff})!
+Sisa stok ${produk} di ${outlet} hanya ${sisaStok} Box.`);
+                return;
+            }
+
+            if (editId === -1) {
+                penulisanDokterData.push({ id: Date.now(), tahun: currentYear, bulan: currentMonth, cutoff: activeCutOff, dokter, outlet, produk, qty, p2x });
+                alert(`Penulisan dokter (${currentYear} - ${currentMonth} - ${activeCutOff}) berhasil disimpan!`);
+            } else {
+                const idx = penulisanDokterData.findIndex(p => p.id === editId);
+                if (idx !== -1) {
+                    penulisanDokterData[idx] = { id: editId, tahun: currentYear, bulan: currentMonth, cutoff: activeCutOff, dokter, outlet, produk, qty, p2x };
+                    alert(`Penulisan dokter berhasil diperbarui!`);
+                }
+            }
+
+            resetTransForm();
+            saveAndRender();
+        }
+
+        function editTrans(id) {
+            const item = penulisanDokterData.find(p => p.id === id);
+            if (!item) return;
+
+            document.getElementById('edit-trans-id').value = id;
+            document.getElementById('form-doc-title').innerText = "Edit Penulisan Dokter";
+            document.getElementById('input-doc-name').value = item.dokter;
+            document.getElementById('input-doc-outlet').value = item.outlet;
+            document.getElementById('input-doc-product').value = item.produk;
+            document.getElementById('input-doc-qty').value = item.qty;
+            document.getElementById('input-doc-p2x').value = item.p2x || "Existing";
+
+            document.getElementById('btn-cancel-trans').classList.remove('hidden');
+            document.getElementById('btn-save-trans').innerText = "Update Penulisan";
+        }
+
+        function deleteTrans(id) {
+            if (confirm("Yakin ingin menghapus catatan penulisan dokter ini?")) {
+                penulisanDokterData = penulisanDokterData.filter(p => p.id !== id);
+                saveAndRender();
+            }
+        }
+
+        function resetTransForm() {
+            document.getElementById('edit-trans-id').value = "-1";
+            document.getElementById('form-doc-title').innerText = "Form Penulisan Dokter";
+            document.getElementById('form-dokter').reset();
+            document.getElementById('btn-cancel-trans').classList.add('hidden');
+            document.getElementById('btn-save-trans').innerText = "Simpan Penulisan Dokter";
+        }
+
+        // --- TAB 2 CRUD: STOK OUTLET ---
+        function toggleOutletModal() {
+            document.getElementById('edit-out-id').value = "-1";
+            document.getElementById('modal-out-title').innerText = "Input Stok Outlet Manual";
+            document.getElementById('modal-out-distributor').value = "Kalista";
+            document.getElementById('modal-out-name').value = "";
+            document.getElementById('modal-out-kode').value = "";
+            document.getElementById('modal-out-product').value = "";
+            document.getElementById('modal-out-stok').value = "";
+            document.getElementById('modal-out-diskon').value = "";
+            document.getElementById('modal-outlet').classList.toggle('hidden');
+        }
+
+        function editStokOutlet(id) {
+            const item = stokOutletData.find(s => s.id === id);
+            if (!item) return;
+
+            document.getElementById('edit-out-id').value = id;
+            document.getElementById('modal-out-title').innerText = "Edit Stok Outlet";
+            document.getElementById('modal-out-distributor').value = item.distributor || "Kalista";
+            document.getElementById('modal-out-name').value = item.outlet;
+            document.getElementById('modal-out-kode').value = item.kodeOutlet || "";
+            document.getElementById('modal-out-product').value = item.produk;
+            document.getElementById('modal-out-stok').value = item.masuk;
+            document.getElementById('modal-out-diskon').value = item.diskon;
+
+            document.getElementById('modal-outlet').classList.remove('hidden');
+        }
+
+        function deleteStokOutlet(id) {
+            if (confirm("Yakin ingin menghapus data stok outlet ini?")) {
+                stokOutletData = stokOutletData.filter(s => s.id !== id);
+                saveAndRender();
+            }
+        }
+
+        function saveOutletModal() {
+            const editId = parseInt(document.getElementById('edit-out-id').value);
+            const distributor = document.getElementById('modal-out-distributor').value;
+            const outlet = document.getElementById('modal-out-name').value;
+            const kodeOutlet = document.getElementById('modal-out-kode').value.trim();
+            const produk = document.getElementById('modal-out-product').value;
+            const masuk = parseInt(document.getElementById('modal-out-stok').value);
+            const diskon = parseFloat(document.getElementById('modal-out-diskon').value);
+            const outObj = masterOutlet.find(o => o.nama === outlet);
+
+            const activeCutOff = (currentCutOff === "Semua CO (CO1+CO2)") ? "Cut Off 1" : currentCutOff;
+
+            if (!distributor || !outlet || !produk || isNaN(masuk) || isNaN(diskon)) {
+                alert("Harap lengkapi distributor, outlet, obat, stok, dan diskon!");
+                return;
+            }
+
+            if (editId === -1) {
+                stokOutletData.push({
+                    id: Date.now(),
+                    tahun: currentYear,
+                    bulan: currentMonth,
+                    cutoff: activeCutOff,
+                    distributor: distributor,
+                    outlet: outlet,
+                    kodeOutlet: kodeOutlet || (outObj ? outObj.kode : '-'),
+                    kat: outObj ? outObj.kat : 'Apotek',
+                    produk: produk,
+                    masuk: masuk,
+                    diskon: diskon
+                });
+            } else {
+                const idx = stokOutletData.findIndex(s => s.id === editId);
+                if (idx !== -1) {
+                    stokOutletData[idx] = {
+                        id: editId,
+                        tahun: currentYear,
+                        bulan: currentMonth,
+                        cutoff: activeCutOff,
+                        distributor: distributor,
+                        outlet: outlet,
+                        kodeOutlet: kodeOutlet || (outObj ? outObj.kode : '-'),
+                        kat: outObj ? outObj.kat : 'Apotek',
+                        produk: produk,
+                        masuk: masuk,
+                        diskon: diskon
+                    };
+                }
+            }
+
+            document.getElementById('modal-outlet').classList.add('hidden');
+            saveAndRender();
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('masterProduk_v11', JSON.stringify(masterProduk));
+            localStorage.setItem('masterOutlet_v11', JSON.stringify(masterOutlet));
+            localStorage.setItem('masterDokterBulan_v11', JSON.stringify(masterDokterBulan));
+            localStorage.setItem('stokOutletData_v11', JSON.stringify(stokOutletData));
+            localStorage.setItem('penulisanDokterData_v11', JSON.stringify(penulisanDokterData));
+            populateDropdowns();
+            renderAll();
+        }
+
+        function renderAll() {
+            renderStokOutlet();
+            renderLogDokter();
+            renderPlafon();
+            renderSummary();
+            renderMasterProduk();
+            renderMasterOutlet();
+        }
+
+        function renderStokOutlet() {
+            const list = document.getElementById('stok-outlet-list');
+            list.innerHTML = '';
+            const filtered = stokOutletData.filter(item => matchPeriodFilter(item));
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs">Belum ada stok outlet diset untuk ${currentYear} - ${currentMonth} (${currentCutOff}).</div>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const pObj = masterProduk.find(p => p.nama === item.produk) || { hna: 0, kat: 'Existing' };
+                const totalAlokasi = penulisanDokterData
+                    .filter(p => (p.tahun || "2026") === (item.tahun || "2026") && p.bulan === item.bulan && p.cutoff === item.cutoff && p.outlet === item.outlet && p.produk === item.produk)
+                    .reduce((acc, curr) => acc + curr.qty, 0);
+
+                const sisaStok = item.masuk - totalAlokasi;
+                const gross = item.masuk * pObj.hna;
+                const bersih = hitungKlaimBersih(item.kat, item.diskon, gross);
+                const isHabis = sisaStok <= 0;
+
+                list.innerHTML += `
+                    <div class="p-3 rounded-lg border ${isHabis ? 'bg-red-50 border-red-300' : 'bg-slate-50 border-slate-200'} text-xs space-y-1">
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="flex items-start gap-2">
+                                <input type="checkbox" value="${item.id}" class="chk-stok mt-1 rounded text-emerald-600">
+                                <div>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-bold text-slate-800 text-sm">${item.outlet}</span>
+                                        <span class="px-1.5 py-0.5 text-[9px] bg-blue-100 text-blue-800 font-bold rounded">${item.distributor || 'Kalista'}</span>
+                                        <span class="px-1.5 py-0.5 text-[9px] bg-purple-100 text-purple-800 font-bold rounded">${item.cutoff}</span>
+                                        <span class="text-[10px] text-slate-400 font-mono">(${item.kodeOutlet || '-'})</span>
+                                    </div>
+                                    <div class="text-slate-600 mt-0.5">Obat: <b>${item.produk}</b> <span class="px-1 py-0.2 text-[9px] bg-slate-200 rounded">${pObj.kat}</span> | Diskon: <b>${item.diskon}%</b></div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-end gap-1">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${isHabis ? 'bg-red-200 text-red-800' : 'bg-emerald-100 text-emerald-800'}">
+                                    Sisa: ${sisaStok} / ${item.masuk} Box
+                                </span>
+                                <div class="flex gap-2 text-[11px] pt-1">
+                                    <button onclick="editStokOutlet(${item.id})" class="text-blue-600 font-semibold underline">Edit</button>
+                                    <button onclick="deleteStokOutlet(${item.id})" class="text-red-600 font-semibold underline">Hapus</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-1 flex justify-between text-[11px] text-slate-500 border-t pt-1">
+                            <span>Gross: Rp${gross.toLocaleString()}</span>
+                            <span class="font-bold text-emerald-700">Net Klaim: Rp${bersih.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderLogDokter() {
+            const list = document.getElementById('log-dokter-list');
+            list.innerHTML = '';
+            const filtered = penulisanDokterData.filter(p => matchPeriodFilter(p));
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs">Belum ada penulisan dokter untuk ${currentYear} - ${currentMonth} (${currentCutOff})</div>`;
+                return;
+            }
+
+            filtered.slice().reverse().forEach(p => {
+                const pObj = masterProduk.find(pr => pr.nama === p.produk) || { hna: 0, kat: 'Existing' };
+                const kotor = p.qty * pObj.hna;
+                const isP2X = p.p2x === "P2X" || pObj.kat === "P2X";
+
+                list.innerHTML += `
+                    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" value="${p.id}" class="chk-trans rounded text-emerald-600">
+                            <div>
+                                <div class="font-bold text-slate-700 flex items-center gap-1">
+                                    ${p.dokter} 
+                                    <span class="text-[9px] bg-purple-100 text-purple-700 font-semibold px-1 rounded">${p.cutoff}</span>
+                                    ${isP2X ? '<span class="text-[9px] bg-indigo-100 text-indigo-700 font-extrabold px-1 rounded">P2X</span>' : ''}
+                                </div>
+                                <div class="text-slate-500">${p.outlet} - ${p.produk} (${p.qty} Box)</div>
+                            </div>
+                        </div>
+                        <div class="text-right space-y-1">
+                            <div class="font-semibold text-emerald-800">Rp${kotor.toLocaleString()}</div>
+                            <div class="flex gap-2 text-[11px] justify-end">
+                                <button onclick="editTrans(${p.id})" class="text-blue-600 font-semibold underline">Edit</button>
+                                <button onclick="deleteTrans(${p.id})" class="text-red-600 font-semibold underline">Hapus</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- TAB 3: RENDER PLAFON DOKTER (AKUMULASI CO1 -> CO2) ---
+        function renderPlafon() {
+            const list = document.getElementById('plafon-list');
+            const search = document.getElementById('search-dokter').value.toLowerCase();
+            list.innerHTML = '';
+
+            const docsInMonth = masterDokterBulan.filter(d => 
+                (d.tahun || "2026") === currentYear && d.bulan === currentMonth &&
+                (d.nama.toLowerCase().includes(search) || (d.kodeUser && d.kodeUser.toLowerCase().includes(search)))
+            );
+
+            if (docsInMonth.length === 0) {
+                list.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs">Belum ada plafon dokter untuk ${currentYear} - ${currentMonth}.</div>`;
+                return;
+            }
+
+            docsInMonth.forEach((doc) => {
+                // Total klaim CO1
+                let totalCairCO1 = 0;
+                let grossP2XCO1 = 0;
+                penulisanDokterData.filter(p => (p.tahun || "2026") === doc.tahun && p.bulan === doc.bulan && p.cutoff === "Cut Off 1" && p.dokter === doc.nama).forEach(p => {
+                    const pObj = masterProduk.find(pr => pr.nama === p.produk) || { hna: 0, kat: 'Existing' };
+                    const stokItem = stokOutletData.find(s => (s.tahun || "2026") === doc.tahun && s.bulan === doc.bulan && s.cutoff === "Cut Off 1" && s.outlet === p.outlet && s.produk === p.produk);
+                    const grossUnit = p.qty * pObj.hna;
+                    if (stokItem) {
+                        totalCairCO1 += hitungKlaimBersih(stokItem.kat, stokItem.diskon, grossUnit);
+                    }
+                    if (p.p2x === "P2X" || pObj.kat === "P2X") grossP2XCO1 += grossUnit;
+                });
+
+                // Total klaim CO2
+                let totalCairCO2 = 0;
+                let grossP2XCO2 = 0;
+                penulisanDokterData.filter(p => (p.tahun || "2026") === doc.tahun && p.bulan === doc.bulan && p.cutoff === "Cut Off 2" && p.dokter === doc.nama).forEach(p => {
+                    const pObj = masterProduk.find(pr => pr.nama === p.produk) || { hna: 0, kat: 'Existing' };
+                    const stokItem = stokOutletData.find(s => (s.tahun || "2026") === doc.tahun && s.bulan === doc.bulan && s.cutoff === "Cut Off 2" && s.outlet === p.outlet && s.produk === p.produk);
+                    const grossUnit = p.qty * pObj.hna;
+                    if (stokItem) {
+                        totalCairCO2 += hitungKlaimBersih(stokItem.kat, stokItem.diskon, grossUnit);
+                    }
+                    if (p.p2x === "P2X" || pObj.kat === "P2X") grossP2XCO2 += grossUnit;
+                });
+
+                let displayTerklaim = 0;
+                let displayP2XGross = 0;
+                let insentifDoc = 0;
+                let sisaPlafon = 0;
+
+                if (currentCutOff === "Cut Off 1") {
+                    displayTerklaim = totalCairCO1;
+                    displayP2XGross = grossP2XCO1;
+                    insentifDoc = calculateInsentif(totalCairCO1, "Cut Off 1");
+                    sisaPlafon = doc.plafon - totalCairCO1;
+                } else if (currentCutOff === "Cut Off 2") {
+                    displayTerklaim = totalCairCO2;
+                    displayP2XGross = grossP2XCO2;
+                    insentifDoc = calculateInsentif(totalCairCO2, "Cut Off 2");
+                    sisaPlafon = doc.plafon - (totalCairCO1 + totalCairCO2); // Plafon dilanjutkan dari CO1
+                } else {
+                    displayTerklaim = totalCairCO1 + totalCairCO2;
+                    displayP2XGross = grossP2XCO1 + grossP2XCO2;
+                    insentifDoc = calculateInsentif(totalCairCO1, "Cut Off 1") + calculateInsentif(totalCairCO2, "Cut Off 2");
+                    sisaPlafon = doc.plafon - displayTerklaim;
+                }
+
+                const isOver = sisaPlafon < 0;
+
+                list.innerHTML += `
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-2">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" value="${doc.nama}" class="chk-plafon rounded text-emerald-600">
+                                <div>
+                                    <span class="font-bold text-slate-800 text-sm">${doc.nama}</span>
+                                    <span class="ml-1 text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">${currentCutOff}</span>
+                                    ${doc.kodeUser ? `<span class="ml-1 text-[10px] font-mono px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded">Kode: ${doc.kodeUser}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="editDokter('${doc.nama}')" class="text-blue-600 font-semibold text-[11px] underline">Edit Plafon</button>
+                                <button onclick="deleteDokter('${doc.nama}')" class="text-red-600 font-semibold text-[11px] underline">Hapus</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1 text-[11px]">
+                            <div>Plafon Bulanan: <br><b>Rp${doc.plafon.toLocaleString()}</b></div>
+                            <div>Klaim ${currentCutOff}: <br><b class="text-emerald-700">Rp${displayTerklaim.toLocaleString()}</b></div>
+                            <div>Sisa Plafon Akumulatif: <br><b class="${isOver ? 'text-red-600' : 'text-slate-700'}">Rp${sisaPlafon.toLocaleString()}</b></div>
+                        </div>
+                        ${currentCutOff === "Cut Off 2" ? `
+                        <div class="text-[10px] text-slate-500 bg-slate-100 p-1.5 rounded flex justify-between">
+                            <span>Pemakaian CO1: <b>Rp${totalCairCO1.toLocaleString()}</b></span>
+                            <span>Pemakaian CO2: <b>Rp${totalCairCO2.toLocaleString()}</b></span>
+                            <span>Total Terpakai: <b class="text-emerald-800">Rp${(totalCairCO1+totalCairCO2).toLocaleString()}</b></span>
+                        </div>` : ''}
+                        <div class="flex justify-between text-[10px] text-slate-500 border-t pt-1">
+                            <span>Insentif Tier (${currentCutOff}): <b class="text-purple-700">Rp${insentifDoc.toLocaleString()}</b></span>
+                            <span>Gross P2X: <b class="text-indigo-700">Rp${displayP2XGross.toLocaleString()}</b></span>
+                        </div>
+                        ${isOver ? '<div class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold text-center">OVER BUDGET BULANAN!</div>' : ''}
+                    </div>
+                `;
+            });
+        }
+
+        // --- TAB 4: SUMMARY GENERATION ---
+        function renderSummary() {
+            let grandGross = 0;
+            let grandNet = 0;
+            let grandInsentif = 0;
+            let grandP2XGross = 0;
+
+            const filteredStok = stokOutletData.filter(s => matchPeriodFilter(s));
+            filteredStok.forEach(s => {
+                const pObj = masterProduk.find(p => p.nama === s.produk) || { hna: 0 };
+                const gross = s.masuk * pObj.hna;
+                const net = hitungKlaimBersih(s.kat, s.diskon, gross);
+                grandGross += gross;
+                grandNet += net;
+            });
+
+            penulisanDokterData.filter(p => matchPeriodFilter(p)).forEach(p => {
+                const pObj = masterProduk.find(pr => pr.nama === p.produk) || { hna: 0, kat: 'Existing' };
+                if (p.p2x === "P2X" || pObj.kat === "P2X") {
+                    grandP2XGross += (p.qty * pObj.hna);
+                }
+            });
+
+            const docSummaryList = document.getElementById('summary-dokter-list');
+            docSummaryList.innerHTML = '';
+
+            const filteredDocs = masterDokterBulan.filter(d => (d.tahun || "2026") === currentYear && d.bulan === currentMonth);
+            
+            if (filteredDocs.length === 0) {
+                docSummaryList.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs">Belum ada data rekapitulasi dokter pada periode ini.</div>`;
+                document.getElementById('sum-total-net').innerText = `Rp0`;
+                document.getElementById('sum-total-gross').innerText = `Rp0`;
+                document.getElementById('sum-total-insentif').innerText = `Rp0`;
+                document.getElementById('sum-total-p2x').innerText = `Rp0`;
+                return;
+            }
+
+            filteredDocs.forEach(d => {
+                let klaimCO1 = 0, klaimCO2 = 0, p2xGrossCO1 = 0, p2xGrossCO2 = 0;
+
+                penulisanDokterData.filter(p => (p.tahun || "2026") === d.tahun && p.bulan === d.bulan && p.dokter === d.nama).forEach(p => {
+                    const pObj = masterProduk.find(pr => pr.nama === p.produk) || { hna: 0, kat: 'Existing' };
+                    const stokItem = stokOutletData.find(s => (s.tahun || "2026") === d.tahun && s.bulan === d.bulan && s.cutoff === p.cutoff && s.outlet === p.outlet && s.produk === p.produk);
+                    let netVal = 0;
+                    const grossUnit = p.qty * pObj.hna;
+                    if (stokItem) {
+                        netVal = hitungKlaimBersih(stokItem.kat, stokItem.diskon, grossUnit);
+                    }
+
+                    if (p.cutoff === "Cut Off 1") {
+                        klaimCO1 += netVal;
+                        if (p.p2x === "P2X" || pObj.kat === "P2X") p2xGrossCO1 += grossUnit;
+                    } else if (p.cutoff === "Cut Off 2") {
+                        klaimCO2 += netVal;
+                        if (p.p2x === "P2X" || pObj.kat === "P2X") p2xGrossCO2 += grossUnit;
+                    }
+                });
+
+                let insentifCO1 = calculateInsentif(klaimCO1, "Cut Off 1");
+                let insentifCO2 = calculateInsentif(klaimCO2, "Cut Off 2");
+
+                let displayKlaim = 0, displayInsentif = 0, displayP2XGross = 0;
+                if (currentCutOff === "Cut Off 1") {
+                    displayKlaim = klaimCO1; displayInsentif = insentifCO1; displayP2XGross = p2xGrossCO1;
+                } else if (currentCutOff === "Cut Off 2") {
+                    displayKlaim = klaimCO2; displayInsentif = insentifCO2; displayP2XGross = p2xGrossCO2;
+                } else {
+                    displayKlaim = klaimCO1 + klaimCO2; displayInsentif = insentifCO1 + insentifCO2; displayP2XGross = p2xGrossCO1 + p2xGrossCO2;
+                }
+
+                grandInsentif += displayInsentif;
+
+                const totalKlaimMonth = klaimCO1 + klaimCO2;
+                const sisaAkumulasi = d.plafon - totalKlaimMonth;
+                const pct = d.plafon > 0 ? ((totalKlaimMonth / d.plafon) * 100).toFixed(1) : 0;
+                const isOver = sisaAkumulasi < 0;
+
+                docSummaryList.innerHTML += `
+                    <div class="py-2.5 space-y-1">
+                        <div class="flex justify-between items-center font-bold text-slate-800">
+                            <div>
+                                ${d.nama} 
+                                ${d.kodeUser ? `<span class="text-[10px] font-mono text-slate-500">(${d.kodeUser})</span>` : ''}
+                            </div>
+                            <span class="${isOver ? 'text-red-600 font-extrabold' : 'text-emerald-700'}">${pct}% Terpakai Total</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-slate-600">
+                            <span>Plafon Bulanan: <b>Rp${d.plafon.toLocaleString()}</b></span>
+                            <span>Klaim (${currentCutOff}): <b class="text-emerald-700">Rp${displayKlaim.toLocaleString()}</b></span>
+                            <span>Sisa Plafon Akhir: <b class="${isOver ? 'text-red-600' : 'text-slate-700'}">Rp${sisaAkumulasi.toLocaleString()}</b></span>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-500 pt-0.5">
+                            <span>Insentif Tier (${currentCutOff}): <b class="text-purple-700">Rp${displayInsentif.toLocaleString()}</b></span>
+                            <span>Gross P2X: <b class="text-indigo-700">Rp${displayP2XGross.toLocaleString()}</b></span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('sum-total-net').innerText = `Rp${grandNet.toLocaleString()}`;
+            document.getElementById('sum-total-gross').innerText = `Rp${grandGross.toLocaleString()}`;
+            document.getElementById('sum-total-insentif').innerText = `Rp${grandInsentif.toLocaleString()}`;
+            document.getElementById('sum-total-p2x').innerText = `Rp${grandP2XGross.toLocaleString()}`;
+        }
+
+        // --- TAB 3 CRUD: PLAFON DOKTER ---
+        function toggleDocModal() {
+            document.getElementById('edit-doc-index').value = "-1";
+            document.getElementById('modal-doc-title').innerText = `Tambah Plafon Dokter (${currentYear} - ${currentMonth})`;
+            document.getElementById('modal-doc-code').value = "";
+            document.getElementById('modal-doc-name').value = "";
+            document.getElementById('modal-doc-plafon').value = "";
+            document.getElementById('modal-dokter').classList.toggle('hidden');
+        }
+
+        function editDokter(docName) {
+            const doc = masterDokterBulan.find(d => (d.tahun || "2026") === currentYear && d.bulan === currentMonth && d.nama === docName);
+            if (!doc) return;
+            document.getElementById('edit-doc-index').value = docName;
+            document.getElementById('modal-doc-title').innerText = `Edit Plafon Dokter (${currentYear} - ${currentMonth})`;
+            document.getElementById('modal-doc-code').value = doc.kodeUser || "";
+            document.getElementById('modal-doc-name').value = doc.nama;
+            document.getElementById('modal-doc-plafon').value = doc.plafon;
+            document.getElementById('modal-dokter').classList.remove('hidden');
+        }
+
+        function deleteDokter(docName) {
+            if (confirm(`Yakin ingin menghapus dokter ${docName} dari ${currentYear} - ${currentMonth}?`)) {
+                masterDokterBulan = masterDokterBulan.filter(d => !((d.tahun || "2026") === currentYear && d.bulan === currentMonth && d.nama === docName));
+                saveAndRender();
+            }
+        }
+
+        function saveDokterModal() {
+            const oldName = document.getElementById('edit-doc-index').value;
+            const kodeUser = document.getElementById('modal-doc-code').value.trim();
+            const nama = document.getElementById('modal-doc-name').value.trim();
+            const plafon = parseInt(document.getElementById('modal-doc-plafon').value);
+
+            if (!nama || isNaN(plafon)) {
+                alert("Harap isi nama dokter dan nominal plafon dengan benar!");
+                return;
+            }
+
+            if (oldName === "-1") {
+                masterDokterBulan.push({ tahun: currentYear, bulan: currentMonth, kodeUser, nama, plafon });
+            } else {
+                const docIdx = masterDokterBulan.findIndex(d => (d.tahun || "2026") === currentYear && d.bulan === currentMonth && d.nama === oldName);
+                if (docIdx !== -1) {
+                    masterDokterBulan[docIdx] = { tahun: currentYear, bulan: currentMonth, kodeUser, nama, plafon };
+                }
+            }
+
+            document.getElementById('modal-dokter').classList.add('hidden');
+            saveAndRender();
+        }
+
+        function importDokterExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.SheetNames[0];
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1 });
+
+                let count = 0;
+                rows.forEach((row, rIdx) => {
+                    if (rIdx === 0) return;
+                    let kodeUser = "", nama = "", plafon = 0;
+                    if (row.length >= 3) {
+                        kodeUser = String(row[0] || "").trim();
+                        nama = String(row[1] || "").trim();
+                        plafon = parseInt(row[2] || 0);
+                    } else {
+                        nama = String(row[0] || "").trim();
+                        plafon = parseInt(row[1] || 0);
+                    }
+
+                    if (nama && !isNaN(plafon) && plafon > 0) {
+                        const existingIdx = masterDokterBulan.findIndex(d => (d.tahun || "2026") === currentYear && d.bulan === currentMonth && d.nama.toLowerCase() === nama.toLowerCase());
+                        if (existingIdx !== -1) {
+                            masterDokterBulan[existingIdx].plafon = plafon;
+                            if (kodeUser) masterDokterBulan[existingIdx].kodeUser = kodeUser;
+                        } else {
+                            masterDokterBulan.push({ tahun: currentYear, bulan: currentMonth, kodeUser, nama, plafon });
+                        }
+                        count++;
+                    }
+                });
+
+                saveAndRender();
+                alert(`Berhasil mengimpor ${count} data plafon dokter ke ${currentYear} - ${currentMonth}!`);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function importStokExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const activeCutOff = (currentCutOff === "Semua CO (CO1+CO2)") ? "Cut Off 1" : currentCutOff;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.SheetNames[0];
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1 });
+
+                let count = 0;
+                rows.forEach((row, rIdx) => {
+                    if (rIdx === 0) return;
+                    let distributor = "Kalista", outlet = "", kodeOutlet = "", produk = "", masuk = 0, diskon = 0;
+                    if (row.length >= 6) {
+                        distributor = String(row[0] || "Kalista").trim();
+                        outlet = String(row[1] || "").trim();
+                        kodeOutlet = String(row[2] || "").trim();
+                        produk = String(row[3] || "").trim();
+                        masuk = parseInt(row[4] || 0);
+                        diskon = parseFloat(row[5] || 0);
+                    } else {
+                        outlet = String(row[0] || "").trim();
+                        produk = String(row[1] || "").trim();
+                        masuk = parseInt(row[2] || 0);
+                        diskon = parseFloat(row[3] || 0);
+                    }
+
+                    const outObj = masterOutlet.find(o => o.nama.toLowerCase() === outlet.toLowerCase());
+
+                    if (outlet && produk && masuk > 0) {
+                        stokOutletData.push({
+                            id: Date.now() + rIdx,
+                            tahun: currentYear,
+                            bulan: currentMonth,
+                            cutoff: activeCutOff,
+                            distributor: distributor,
+                            outlet: outlet,
+                            kodeOutlet: kodeOutlet || (outObj ? outObj.kode : '-'),
+                            kat: outObj ? outObj.kat : 'Apotek',
+                            produk: produk,
+                            masuk: masuk,
+                            diskon: diskon
+                        });
+                        count++;
+                    }
+                });
+
+                saveAndRender();
+                alert(`Berhasil mengimpor ${count} baris stok outlet ke ${currentYear} - ${currentMonth} - ${activeCutOff}!`);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- TAB 5 CRUD: MASTER PRODUK & MASTER OUTLET ---
+        function renderMasterProduk() {
+            const list = document.getElementById('master-produk-list');
+            list.innerHTML = '';
+            masterProduk.forEach((p, idx) => {
+                list.innerHTML += `
+                    <div class="py-2 flex justify-between items-center text-xs">
+                        <div>
+                            <span class="font-bold text-slate-800">${p.nama}</span>
+                            <span class="text-[10px] ml-1 px-1.5 py-0.5 bg-slate-200 rounded text-slate-600">${p.kat}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-emerald-800">Rp${p.hna.toLocaleString()}</span>
+                            <div class="flex gap-1.5 text-[11px]">
+                                <button onclick="editMasterProduk(${idx})" class="text-blue-600 underline">Edit</button>
+                                <button onclick="deleteMasterProduk(${idx})" class="text-red-600 underline">Hapus</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleProdukModal() {
+            document.getElementById('edit-produk-index').value = "-1";
+            document.getElementById('modal-produk-title').innerText = "Tambah Produk Obat";
+            document.getElementById('modal-produk-name').value = "";
+            document.getElementById('modal-produk-hna').value = "";
+            document.getElementById('modal-produk-kat').value = "Existing";
+            document.getElementById('modal-master-produk').classList.toggle('hidden');
+        }
+
+        function editMasterProduk(idx) {
+            const p = masterProduk[idx];
+            document.getElementById('edit-produk-index').value = idx;
+            document.getElementById('modal-produk-title').innerText = "Edit Produk Obat";
+            document.getElementById('modal-produk-name').value = p.nama;
+            document.getElementById('modal-produk-hna').value = p.hna;
+            document.getElementById('modal-produk-kat').value = p.kat;
+            document.getElementById('modal-master-produk').classList.remove('hidden');
+        }
+
+        function deleteMasterProduk(idx) {
+            if (confirm(`Yakin ingin menghapus produk ${masterProduk[idx].nama} dari Master Data?`)) {
+                masterProduk.splice(idx, 1);
+                saveAndRender();
+            }
+        }
+
+        function saveMasterProduk() {
+            const idx = parseInt(document.getElementById('edit-produk-index').value);
+            const nama = document.getElementById('modal-produk-name').value.trim();
+            const hna = parseInt(document.getElementById('modal-produk-hna').value);
+            const kat = document.getElementById('modal-produk-kat').value;
+
+            if (!nama || isNaN(hna)) {
+                alert("Harap isi nama produk dan harga HNA dengan benar!");
+                return;
+            }
+
+            if (idx === -1) {
+                masterProduk.push({ nama, hna, kat });
+            } else {
+                masterProduk[idx] = { nama, hna, kat };
+            }
+
+            document.getElementById('modal-master-produk').classList.add('hidden');
+            saveAndRender();
+        }
+
+        function renderMasterOutlet() {
+            const list = document.getElementById('master-outlet-list');
+            list.innerHTML = '';
+            masterOutlet.forEach((o, idx) => {
+                list.innerHTML += `
+                    <div class="py-2 flex justify-between items-center text-xs">
+                        <div>
+                            <span class="font-bold text-slate-800">${o.nama}</span>
+                            <span class="text-[10px] ml-1 px-1.5 py-0.5 bg-slate-200 rounded text-slate-600">${o.kat}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-slate-500 font-mono text-[11px]">${o.kode}</span>
+                            <div class="flex gap-1.5 text-[11px]">
+                                <button onclick="editMasterOutlet(${idx})" class="text-blue-600 underline">Edit</button>
+                                <button onclick="deleteMasterOutlet(${idx})" class="text-red-600 underline">Hapus</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleOutletMasterModal() {
+            document.getElementById('edit-outlet-master-index').value = "-1";
+            document.getElementById('modal-outlet-master-title').innerText = "Tambah Outlet Master";
+            document.getElementById('modal-outlet-master-name').value = "";
+            document.getElementById('modal-outlet-master-kode').value = "";
+            document.getElementById('modal-outlet-master-kat').value = "Apotek";
+            document.getElementById('modal-master-outlet').classList.toggle('hidden');
+        }
+
+        function editMasterOutlet(idx) {
+            const o = masterOutlet[idx];
+            document.getElementById('edit-outlet-master-index').value = idx;
+            document.getElementById('modal-outlet-master-title').innerText = "Edit Outlet Master";
+            document.getElementById('modal-outlet-master-name').value = o.nama;
+            document.getElementById('modal-outlet-master-kode').value = o.kode;
+            document.getElementById('modal-outlet-master-kat').value = o.kat;
+            document.getElementById('modal-master-outlet').classList.remove('hidden');
+        }
+
+        function deleteMasterOutlet(idx) {
+            if (confirm(`Yakin ingin menghapus outlet ${masterOutlet[idx].nama} dari Master Data?`)) {
+                masterOutlet.splice(idx, 1);
+                saveAndRender();
+            }
+        }
+
+        function saveMasterOutlet() {
+            const idx = parseInt(document.getElementById('edit-outlet-master-index').value);
+            const nama = document.getElementById('modal-outlet-master-name').value.trim();
+            const kode = document.getElementById('modal-outlet-master-kode').value.trim() || "-";
+            const kat = document.getElementById('modal-outlet-master-kat').value;
+
+            if (!nama) {
+                alert("Harap isi nama outlet dengan benar!");
+                return;
+            }
+
+            if (idx === -1) {
+                masterOutlet.push({ nama, kode, kat });
+            } else {
+                masterOutlet[idx] = { nama, kode, kat };
+            }
+
+            document.getElementById('modal-master-outlet').classList.add('hidden');
+            saveAndRender();
+        }
+
+        function switchTab(tab) {
+            ['transaksi', 'outlet', 'plafon', 'summary', 'master'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).classList.remove('tab-active');
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.getElementById(`nav-${tab}`).classList.add('tab-active');
+        }
+
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+            const wsStok = XLSX.utils.json_to_sheet(stokOutletData.filter(s => matchPeriodFilter(s)));
+            const wsPenulisan = XLSX.utils.json_to_sheet(penulisanDokterData.filter(p => matchPeriodFilter(p)));
+            const wsDokter = XLSX.utils.json_to_sheet(masterDokterBulan.filter(d => (d.tahun || "2026") === currentYear && d.bulan === currentMonth));
+            const wsMasterProduk = XLSX.utils.json_to_sheet(masterProduk);
+            const wsMasterOutlet = XLSX.utils.json_to_sheet(masterOutlet);
+            
+            XLSX.utils.book_append_sheet(wb, wsDokter, "Plafon Dokter");
+            XLSX.utils.book_append_sheet(wb, wsStok, "Stok Outlet");
+            XLSX.utils.book_append_sheet(wb, wsPenulisan, "Penulisan Dokter");
+            XLSX.utils.book_append_sheet(wb, wsMasterProduk, "Master Produk");
+            XLSX.utils.book_append_sheet(wb, wsMasterOutlet, "Master Outlet");
+            XLSX.writeFile(wb, `Rekap_Klaim_Farmasi_${currentYear}_${currentMonth}_${currentCutOff.replace(/ /g, "")}.xlsx`);
+        }
+    </script>
+</body>
+</html>
