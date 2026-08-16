@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Farmasi Klaim App V11</title>
-    <!-- Working CDN explicit paths -->
     <script src="https://jsdelivr.net"></script>
     <script src="https://jsdelivr.net"></script>
     
@@ -24,7 +23,7 @@
             top: 0; 
             z-index: 50; 
             display: flex; 
-            justify-between; 
+            justify-content: space-between; 
             align-items: center; 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
         }
@@ -188,7 +187,7 @@
         </div>
     </div>
 
-    <!-- FIX: Corrected target switch arguments to map parameters flawlessly -->
+    <!-- Navigation linked to simple arguments -->
     <nav>
         <button onclick="switchTab('tab-transaksi')" id="nav-tab-transaksi" class="tab-active">Input Dokter</button>
         <button onclick="switchTab('tab-outlet')" id="nav-tab-outlet">Stok Outlet</button>
@@ -214,17 +213,16 @@
                     <div class="form-group">
                         <label>Outlet Tempat Penulisan</label>
                         <select id="input-doc-outlet" required>
-                            <option value="">Loading outlets...</option>
+                            <!-- Dropdowns will immediately populate with standard entries while cloud runs -->
+                            <option value="Apotek Sehat">Apotek Sehat (Lokal)</option>
                         </select>
                     </div>
                     <div class="grid-2">
                         <div class="form-group">
                             <label>Produk Obat</label>
                             <select id="input-doc-product" required>
-                                <option value="">Loading products...</option>
+                                <option value="Amoxillin Box">Amoxillin Box (Lokal)</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Qty (Box)</label>
-                            <input type="number" id="input-doc-qty" min="1" required value="1">
-                        </div>
