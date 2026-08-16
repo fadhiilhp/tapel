@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Farmasi Klaim App V11</title>
-    <!-- FIX: Restored working Excel CDN bundle link with explicit path -->
+    <!-- Restored explicit paths for external dependencies -->
     <script src="https://jsdelivr.net"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://jsdelivr.net"></script>
     
     <style>
         body { 
@@ -46,9 +46,9 @@
         .btn-sync:hover { background-color: #065f46; }
         .btn-export { background-color: #059669; }
         .btn-export:hover { background-color: #047857; }
-        .btn-primary { background-color: #0F5132; font-size: 14px; padding: 12px; width: 100%; border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: 600; }
+        .btn-primary { background-color: #0F5132; font-size: 14px; padding: 12px; width: 100%; border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: 600; box-sizing: border-box;}
         .btn-primary:hover { background-color: #065f46; }
-        .btn-cancel { background-color: #e2e8f0; color: #475569; font-size: 14px; padding: 12px; width: 100%; border: none; border-radius: 6px; cursor: pointer; }
+        .btn-cancel { background-color: #e2e8f0; color: #475569; font-size: 14px; padding: 12px; width: 100%; border: none; border-radius: 6px; cursor: pointer; box-sizing: border-box;}
 
         .period-banner { 
             background-color: #064e3b; 
@@ -212,12 +212,16 @@
                     </div>
                     <div class="form-group">
                         <label>Outlet Tempat Penulisan</label>
-                        <select id="input-doc-outlet" required></select>
+                        <select id="input-doc-outlet" required>
+                            <option value="">Loading outlets...</option>
+                        </select>
                     </div>
                     <div class="grid-2">
                         <div class="form-group">
                             <label>Produk Obat</label>
-                            <select id="input-doc-product" required></select>
+                            <select id="input-doc-product" required>
+                                <option value="">Loading products...</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Qty (Box)</label>
@@ -226,6 +230,3 @@
                     </div>
                     <div class="grid-2">
                         <div class="form-group">
-                            <label>Status P2X</label>
-                            <select id="input-doc-p2x">
-                                <option value="P2X">P2X</option>
