@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Farmasi Klaim App V11</title>
-    <!-- Fallback Core Scripts -->
+    <!-- Core Essential Database & Excel Bundles Only -->
     <script src="https://jsdelivr.net"></script>
-    <script src="https://jsdelivr.net"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        /* Standalone System Styling - No Tailwind Required */
+        /* Pure Independent Stylesheet */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             margin: 0; 
@@ -84,7 +84,7 @@
             cursor: pointer; 
         }
 
-        /* Fixed Navigation Tab Engine */
+        /* Fixed Navigation Tab Bar */
         nav { 
             position: fixed; 
             bottom: 0; 
@@ -116,7 +116,7 @@
             font-weight: bold; 
         }
 
-        /* Layout Main Containers */
+        /* Core Layout Elements */
         main { max-width: 800px; margin: 0 auto; padding: 20px; }
         .card { 
             background-color: white; 
@@ -130,13 +130,13 @@
         .card-header h2 { margin: 0; font-size: 16px; color: #1e293b; font-weight: 700; }
         .badge { background-color: #d1fae5; color: #065f46; font-weight: 700; padding: 3px 8px; border-radius: 4px; font-size: 11px; }
 
-        /* Form styling */
+        /* Input Controls Layout */
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .flex-gap { display: flex; gap: 10px; margin-top: 15px; }
 
-        /* Data Tables */
+        /* Reactive Data Tables */
         .table-container { overflow-x: auto; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
         th { background-color: #f8fafc; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 10px; padding: 8px; border-bottom: 1px solid #e2e8f0; }
@@ -195,7 +195,7 @@
         </div>
     </div>
 
-    <!-- Connected Navigation Bar Engine Routing -->
+    <!-- Active Routed Navigation Engine -->
     <nav>
         <button onclick="switchTab('transaksi')" id="nav-transaksi" class="tab-active">Input Dokter</button>
         <button onclick="switchTab('outlet')" id="nav-outlet">Stok Outlet</button>
