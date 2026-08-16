@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Farmasi Klaim App V11</title>
-    <!-- Core Essential Database & Excel Bundles Only -->
+    <!-- FIX: Restored working Excel CDN bundle link -->
     <script src="https://jsdelivr.net"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        /* Pure Independent Stylesheet */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             margin: 0; 
@@ -51,7 +50,6 @@
         .btn-primary:hover { background-color: #065f46; }
         .btn-cancel { background-color: #e2e8f0; color: #475569; font-size: 14px; padding: 12px; width: 100%; border: none; border-radius: 6px; cursor: pointer; }
 
-        /* Period Banner */
         .period-banner { 
             background-color: #064e3b; 
             color: white; 
@@ -84,7 +82,6 @@
             cursor: pointer; 
         }
 
-        /* Fixed Navigation Tab Bar */
         nav { 
             position: fixed; 
             bottom: 0; 
@@ -116,7 +113,6 @@
             font-weight: bold; 
         }
 
-        /* Core Layout Elements */
         main { max-width: 800px; margin: 0 auto; padding: 20px; }
         .card { 
             background-color: white; 
@@ -130,13 +126,11 @@
         .card-header h2 { margin: 0; font-size: 16px; color: #1e293b; font-weight: 700; }
         .badge { background-color: #d1fae5; color: #065f46; font-weight: 700; padding: 3px 8px; border-radius: 4px; font-size: 11px; }
 
-        /* Input Controls Layout */
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .flex-gap { display: flex; gap: 10px; margin-top: 15px; }
 
-        /* Reactive Data Tables */
         .table-container { overflow-x: auto; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
         th { background-color: #f8fafc; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 10px; padding: 8px; border-bottom: 1px solid #e2e8f0; }
@@ -162,7 +156,6 @@
         </div>
     </header>
 
-    <!-- Global Period Selector Banner -->
     <div class="period-banner">
         <div><strong>Periode:</strong></div>
         <div class="period-selectors">
@@ -195,7 +188,6 @@
         </div>
     </div>
 
-    <!-- Active Routed Navigation Engine -->
     <nav>
         <button onclick="switchTab('transaksi')" id="nav-transaksi" class="tab-active">Input Dokter</button>
         <button onclick="switchTab('outlet')" id="nav-outlet">Stok Outlet</button>
@@ -233,3 +225,8 @@
                         </div>
                     </div>
                     <div class="grid-2">
+                        <div class="form-group">
+                            <label>Status P2X</label>
+                            <select id="input-doc-p2x">
+                                <option value="P2X">P2X</option>
+                                <option value="Existing">Non-P2X / Existing</option>
