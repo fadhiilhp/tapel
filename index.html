@@ -4,45 +4,175 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Farmasi Klaim App V11</title>
-    <script src="https://tailwindcss.com"></script>
-    <script src="https://unpkg.com"></script>
+    <!-- Fallback Core Scripts -->
     <script src="https://jsdelivr.net"></script>
     <script src="https://jsdelivr.net"></script>
+    
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .tab-active { border-bottom: 3px solid #0F5132; color: #0F5132; font-weight: bold; }
+        /* Standalone System Styling - No Tailwind Required */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            padding-bottom: 80px; 
+            background-color: #f1f5f9; 
+            color: #334155; 
+        }
+        header { 
+            background-color: #0F5132; 
+            color: white; 
+            padding: 15px 20px; 
+            position: sticky; 
+            top: 0; 
+            z-index: 50; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+        }
+        header h1 { margin: 0; font-size: 20px; font-weight: 700; }
+        header p { margin: 2px 0 0 0; font-size: 12px; color: #a7f3d0; }
+        
+        .header-buttons { display: flex; gap: 8px; }
+        .btn { 
+            border: none; 
+            padding: 8px 14px; 
+            border-radius: 6px; 
+            font-size: 12px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            color: white; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .btn-sync { background-color: #047857; }
+        .btn-sync:hover { background-color: #065f46; }
+        .btn-export { background-color: #059669; }
+        .btn-export:hover { background-color: #047857; }
+        .btn-primary { background-color: #0F5132; font-size: 14px; padding: 12px; width: 100%; }
+        .btn-primary:hover { background-color: #065f46; }
+        .btn-cancel { background-color: #e2e8f0; color: #475569; font-size: 14px; padding: 12px; width: 100%; }
+
+        /* Period Banner */
+        .period-banner { 
+            background-color: #064e3b; 
+            color: white; 
+            padding: 10px 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-size: 13px; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+        }
+        .period-selectors { display: flex; gap: 8px; }
+        select, input[type="text"], input[type="number"] { 
+            background-color: white; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            padding: 10px; 
+            font-size: 14px; 
+            color: #334155; 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
+        .period-selectors select { 
+            background-color: #047857; 
+            color: white; 
+            border: 1px solid #065f46; 
+            font-weight: bold; 
+            padding: 6px 10px; 
+            width: auto; 
+            cursor: pointer; 
+        }
+
+        /* Navigation */
+        nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background-color: white; 
+            border-top: 1px solid #e2e8f0; 
+            display: flex; 
+            justify-content: space-around; 
+            z-index: 50; 
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.05); 
+        }
+        nav button { 
+            flex: 1; 
+            background: none; 
+            border: none; 
+            padding: 15px 5px; 
+            text-align: center; 
+            color: #64748b; 
+            font-size: 11px; 
+            cursor: pointer; 
+            font-weight: 500; 
+        }
+        nav button.tab-active { 
+            border-top: 3px solid #0F5132; 
+            color: #0F5132; 
+            font-weight: bold; 
+            padding-top: 12px; 
+        }
+
+        /* Layout Main Containers */
+        main { max-width: 480px; margin: 0 auto; padding: 15px; }
+        .card { 
+            background-color: white; 
+            padding: 16px; 
+            border-radius: 12px; 
+            border: 1px solid #e2e8f0; 
+            margin-bottom: 16px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02); 
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .card-header h2 { margin: 0; font-size: 16px; color: #1e293b; font-weight: 700; }
+        .badge { background-color: #d1fae5; color: #065f46; font-weight: 700; padding: 3px 8px; border-radius: 4px; font-size: 11px; }
+
+        /* Form styling */
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .flex-gap { display: flex; gap: 10px; margin-top: 15px; }
+
+        /* Data Tables */
+        .table-container { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+        th { background-color: #f8fafc; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 10px; padding: 8px; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; }
+        tr:hover td { background-color: #f8fafc; }
+        
+        .action-links button { background: none; border: none; font-weight: bold; cursor: pointer; margin-right: 8px; }
+        .btn-edit { color: #2563eb; }
+        .btn-delete { color: #dc2626; }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 pb-20">
-    <header class="bg-[#0F5132] text-white p-4 sticky top-0 z-50 shadow-md flex justify-between items-center">
+<body>
+    <header>
         <div>
-            <h1 class="font-bold text-lg leading-tight">Farmasi Klaim App V11</h1>
-            <p class="text-xs text-emerald-200">Akumulasi Plafon & Summary P2X Gross (Rp)</p>
+            <h1>Farmasi Klaim App V11</h1>
+            <p>Akumulasi Plafon & Summary P2X Gross (Rp)</p>
         </div>
-        <div class="flex items-center gap-2">
-            <button onclick="syncAllData()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs px-2.5 py-2 rounded-lg flex items-center gap-1 shadow transition">
-                🔄 Sync Cloud
-            </button>
-            <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg flex items-center gap-1 shadow transition">
-                Export Excel
-            </button>
+        <div class="header-buttons">
+            <button onclick="syncAllData()" class="btn btn-sync">🔄 Sync Cloud</button>
+            <button onclick="exportToExcel()" class="btn btn-export">Export Excel</button>
         </div>
     </header>
 
     <!-- Global Period Selector Banner -->
-    <div class="bg-emerald-900 text-white px-3 py-2.5 flex justify-between items-center text-xs shadow-inner gap-1 flex-wrap">
-        <div class="flex items-center gap-1 font-medium">
-            <span>Periode:</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-            <select id="global-year-select" onchange="changePeriod()" class="bg-emerald-800 border border-emerald-600 text-white font-bold rounded-md px-1.5 py-1 text-xs focus:outline-none cursor-pointer">
+    <div class="period-banner">
+        <div><strong>Periode:</strong></div>
+        <div class="period-selectors">
+            <select id="global-year-select" onchange="changePeriod()">
                 <option value="2024">2024</option>
                 <option value="2025">2025</option>
                 <option value="2026" selected>2026</option>
                 <option value="2027">2027</option>
                 <option value="2028">2028</option>
             </select>
-            <select id="global-month-select" onchange="changePeriod()" class="bg-emerald-800 border border-emerald-600 text-white font-bold rounded-md px-1.5 py-1 text-xs focus:outline-none cursor-pointer">
+            <select id="global-month-select" onchange="changePeriod()">
                 <option value="Januari">Januari</option>
                 <option value="Februari">Februari</option>
                 <option value="Maret">Maret</option>
@@ -56,7 +186,7 @@
                 <option value="November">November</option>
                 <option value="Desember">Desember</option>
             </select>
-            <select id="global-cutoff-select" onchange="changePeriod()" class="bg-emerald-800 border border-emerald-600 text-white font-bold rounded-md px-1.5 py-1 text-xs focus:outline-none cursor-pointer">
+            <select id="global-cutoff-select" onchange="changePeriod()">
                 <option value="Cut Off 1" selected>Cut Off 1</option>
                 <option value="Cut Off 2">Cut Off 2</option>
                 <option value="Semua CO (CO1+CO2)">Semua CO (CO1+CO2)</option>
@@ -65,86 +195,44 @@
     </div>
 
     <!-- Main Navigation Bar -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around z-50 shadow-lg text-[11px]">
-        <button onclick="switchTab('transaksi')" id="nav-transaksi" class="flex-1 py-3 text-center text-slate-500 tab-active flex flex-col items-center">Input Dokter</button>
-        <button onclick="switchTab('outlet')" id="nav-outlet" class="flex-1 py-3 text-center text-slate-500 flex flex-col items-center">Stok Outlet</button>
-        <button onclick="switchTab('plafon')" id="nav-plafon" class="flex-1 py-3 text-center text-slate-500 flex flex-col items-center">Rekap Dokter</button>
-        <button onclick="switchTab('summary')" id="nav-summary" class="flex-1 py-3 text-center text-slate-500 flex flex-col items-center">Summary</button>
-        <button onclick="switchTab('master')" id="nav-master" class="flex-1 py-3 text-center text-slate-500 flex flex-col items-center">Master Data</button>
+    <nav>
+        <button onclick="switchTab('transaksi')" id="nav-transaksi" class="tab-active">Input Dokter</button>
+        <button onclick="switchTab('outlet')" id="nav-outlet">Stok Outlet</button>
+        <button onclick="switchTab('plafon')" id="nav-plafon">Rekap Dokter</button>
+        <button onclick="switchTab('summary')" id="nav-summary">Summary</button>
+        <button onclick="switchTab('master')" id="nav-master">Master Data</button>
     </nav>
 
-    <main class="p-4 max-w-lg mx-auto">
+    <main>
         <!-- TAB 1: INPUT TRANSAKSI DOKTER -->
-        <section id="tab-transaksi" class="space-y-4">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="font-bold text-slate-700 text-sm" id="form-doc-title">Form Penulisan Dokter</h2>
-                    <span class="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded" id="badge-period-transaksi">2026 - Juli - Cut Off 1</span>
+        <section id="tab-transaksi">
+            <div class="card">
+                <div class="card-header">
+                    <h2 id="form-doc-title">Form Penulisan Dokter</h2>
+                    <span class="badge" id="badge-period-transaksi">2026 - Juli - Cut Off 1</span>
                 </div>
-                <form id="form-dokter" onsubmit="addPenulisanDokter(event)" class="space-y-3">
+                <form id="form-dokter" onsubmit="addPenulisanDokter(event)">
                     <input type="hidden" id="edit-trans-id" value="-1">
-                    <div>
-                        <label class="text-xs font-semibold text-slate-600 block mb-1">Nama Dokter Target</label>
-                        <input type="text" id="input-doc-name" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white" placeholder="Masukkan nama dokter">
+                    <div class="form-group">
+                        <label>Nama Dokter Target</label>
+                        <input type="text" id="input-doc-name" required placeholder="Masukkan nama dokter">
                     </div>
-                    <div>
-                        <label class="text-xs font-semibold text-slate-600 block mb-1">Outlet Tempat Penulisan</label>
-                        <select id="input-doc-outlet" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50"></select>
+                    <div class="form-group">
+                        <label>Outlet Tempat Penulisan</label>
+                        <select id="input-doc-outlet" required></select>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-xs font-semibold text-slate-600 block mb-1">Produk Obat</label>
-                            <select id="input-doc-product" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50"></select>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Produk Obat</label>
+                            <select id="input-doc-product" required></select>
                         </div>
-                        <div>
-                            <label class="text-xs font-semibold text-slate-600 block mb-1">Qty (Box)</label>
-                            <input type="number" id="input-doc-qty" min="1" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="1">
+                        <div class="form-group">
+                            <label>Qty (Box)</label>
+                            <input type="number" id="input-doc-qty" min="1" required value="1">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-xs font-semibold text-slate-600 block mb-1">Status P2X</label>
-                            <select id="input-doc-p2x" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Status P2X</label>
+                            <select id="input-doc-p2x">
                                 <option value="P2X">P2X</option>
-                                <option value="Existing">Non-P2X / Existing</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-slate-600 block mb-1">Insentif Dokter (Rp)</label>
-                            <input type="number" id="input-doc-insentif" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="e.g. 50000">
-                        </div>
-                    </div>
-                    <div class="flex gap-2 pt-1">
-                        <button type="button" id="btn-cancel-trans" onclick="resetTransForm()" class="hidden flex-1 bg-slate-200 text-slate-700 font-semibold py-3 rounded-lg text-sm transition">Batal</button>
-                        <button type="submit" id="btn-save-trans" class="flex-1 bg-[#0F5132] hover:bg-emerald-800 text-white font-semibold py-3 rounded-lg shadow text-sm transition">Simpan Penulisan Dokter</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Interactive Table -->
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
-                <h3 class="font-bold text-slate-700 text-sm">Data Penulisan Periode Ini</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-100 text-slate-600 uppercase font-mono text-[10px]">
-                                <th class="p-2 border">Dokter</th>
-                                <th class="p-2 border">Outlet</th>
-                                <th class="p-2 border">Produk</th>
-                                <th class="p-2 border">Qty</th>
-                                <th class="p-2 border">Insentif</th>
-                                <th class="p-2 border">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="render-transaksi-rows">
-                            <tr><td colspan="6" class="text-center p-4 text-slate-400">Loading data dari cloud...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 2: INPUT STOK OUTLET -->
-        <section id="tab-outlet" class="hidden space-y-4">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-3">
